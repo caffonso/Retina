@@ -1,0 +1,165 @@
+pipeline:
+  output_format: json
+  overwrite: false
+  results_dir: /media/public/retinamnist_data/results_retina_aptos_combined_balanced_checkpoint
+  save_only_final_model: false
+  continue_training: false
+resume:
+  skip_completed_runs: true
+  run_result_filename: run_result.json
+  final_model_filename: final_model.keras
+  best_model_filename: best_model.keras
+  training_history_filename: training_history.json
+  interrupted_runs_continue_automatically: true
+  best_accuracy_model_filename: best_accuracy_model.keras
+  best_macro_f1_model_filename: best_macro_f1_model.keras
+  best_balanced_accuracy_model_filename: best_balanced_accuracy_model.keras
+datasets:
+- name: retinamnist_aptos_combined_224
+  train_files:
+  - /media/public/retinamnist_data/pkl/retinamnist_224_train.pkl
+  - /media/public/retinamnist_data/pkl/aptos_224_train.pkl
+  val_files:
+  - /media/public/retinamnist_data/pkl/retinamnist_224_val.pkl
+  - /media/public/retinamnist_data/pkl/aptos_224_val.pkl
+  test_files:
+  - /media/public/retinamnist_data/pkl/retinamnist_224_test.pkl
+  - /media/public/retinamnist_data/pkl/aptos_224_test.pkl
+  preserve_official_splits: true
+  combine_sources_within_each_split: true
+  shuffle_combined_train_each_epoch: true
+training:
+  batch_size: 4
+  epochs: 30
+  learning_rate: 0.0001
+  optimizer: adam
+  loss_default: cross_entropy
+  warmup_epochs: 3
+  prefetch: 1
+  best_model_metric: val_balanced_accuracy
+  best_model_mode: max
+  validation_frequency: epoch
+  checkpoint_policy: save_final_every_epoch_and_best_by_accuracy_macro_f1_balanced_accuracy
+models:
+- resnet10
+- resnet50
+- efficientnetv2b0
+strategies:
+- baseline
+- random_select
+- entropy_weighted
+- fuzzy_entropy_weighted
+- fers
+- random_select_focal_loss
+- fers_focal_loss
+strategy_definitions:
+  baseline:
+    resampling: none
+    loss: cross_entropy
+  random_select:
+    resampling: random_select_to_max
+    loss: cross_entropy
+  entropy_weighted:
+    resampling: entropy_weighted_preserve_original_to_max
+    loss: cross_entropy
+    warmup_epochs: 3
+    selection_mode: probabilistic_entropy_weighted
+    deterministic_top_ranked: false
+  fuzzy_entropy_weighted:
+    resampling: fuzzy_entropy_weighted_preserve_original_to_max
+    loss: cross_entropy
+    warmup_epochs: 3
+    fuzzy_controller: true
+    selection_mode: probabilistic_entropy_weighted_plus_random_safety
+    deterministic_top_ranked: false
+  fers:
+    resampling: fers_close_uncertainty_topranked_to_max
+    loss: cross_entropy
+    warmup_epochs: 3
+    selection_mode: deterministic_top_ranked_entropy_plus_random_safety
+    deterministic_top_ranked: true
+  random_select_focal_loss:
+    resampling: random_select_to_max
+    loss: focal_loss
+    focal_loss_gamma: 2.0
+    focal_loss_alpha: 0.25
+  fers_focal_loss:
+    resampling: fers_close_uncertainty_topranked_to_max
+    loss: focal_loss
+    focal_loss_gamma: 1.0
+    focal_loss_alpha: 0.25
+    warmup_epochs: 3
+    selection_mode: deterministic_top_ranked_entropy_plus_random_safety
+    deterministic_top_ranked: true
+seeds:
+- 7
+- 42
+- 123
+metrics:
+  per_run:
+  - Dataset
+  - Model
+  - Strategy
+  - Seed
+  - Batch
+  - LR
+  - Epochs
+  - Epochs This Run
+  - Total Epochs Completed
+  - Validation Points
+  - Num Classes
+  - Best Accuracy
+  - Best Accuracy Epoch
+  - Final Accuracy
+  - Best Macro-F1
+  - Best Macro-F1 Epoch
+  - Final Macro-F1
+  - AUL F1
+  - Best Balanced Acc.
+  - Best Balanced Acc. Epoch
+  - Balanced Acc. Final
+  - AUL Balanced Acc.
+  - Stability Drop
+  - Test Accuracy
+  - Test Macro-F1
+  - Test Balanced Acc.
+  - Best Model Test Accuracy
+  - Best Model Test Macro-F1
+  - Best Model Test Balanced Acc.
+  - Accuracy-Selected Test Accuracy
+  - Accuracy-Selected Test Macro-F1
+  - Accuracy-Selected Test Balanced Acc.
+  - Macro-F1-Selected Test Accuracy
+  - Macro-F1-Selected Test Macro-F1
+  - Macro-F1-Selected Test Balanced Acc.
+  - Balanced-Acc-Selected Test Accuracy
+  - Balanced-Acc-Selected Test Macro-F1
+  - Balanced-Acc-Selected Test Balanced Acc.
+  - Train Time (min)
+  - Warmup Time (min)
+  aggregate_by:
+  - dataset
+  - model
+  - strategy
+  aggregate_statistics:
+  - mean
+  - std
+output_structure:
+  runs_dir_pattern: results/runs/{dataset}/{model}/{strategy}/seed_{seed}
+  run_result_path_pattern: results/runs/{dataset}/{model}/{strategy}/seed_{seed}/run_result.json
+  summary_path: results/summary.json
+  final_model_path_pattern: results/runs/{dataset}/{model}/{strategy}/seed_{seed}/final_model.keras
+  best_model_path_pattern: results/runs/{dataset}/{model}/{strategy}/seed_{seed}/best_model.keras
+  training_history_path_pattern: results/runs/{dataset}/{model}/{strategy}/seed_{seed}/training_history.json
+  dataset_metadata_dir: results/dataset_metadata
+debug:
+  enabled: false
+  datasets:
+  - retinamnist_aptos_combined_224
+  seeds:
+  - 7
+  models:
+  - resnet10
+  strategies:
+  - baseline
+  epochs: 2
